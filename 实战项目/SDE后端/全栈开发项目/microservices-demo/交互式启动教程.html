@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Online Boutique 微服务实战 — 交互式启动教程</title>
+<style>
+/* ── Reset & Base ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: #0f1117;
+  color: #e0e0e0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Top Progress Bar ─────────────────────────────────────── */
+.progress-bar-container {
+  background: #1a1d27;
+  border-bottom: 1px solid #2a2d3a;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.progress-label {
+  font-size: 14px;
+  color: #8b8fa3;
+  white-space: nowrap;
+}
+.progress-track {
+  flex: 1;
+  height: 6px;
+  background: #2a2d3a;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #06b6d4);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+  width: 0%;
+}
+.btn-reset {
+  background: none;
+  border: 1px solid #3b82f6;
+  color: #3b82f6;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.btn-reset:hover { background: #3b82f6; color: #fff; }
+
+/* ── Layout ───────────────────────────────────────────────── */
+.layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Sidebar (Step Nav) ───────────────────────────────────── */
+.sidebar {
+  width: 280px;
+  background: #151721;
+  border-right: 1px solid #2a2d3a;
+  overflow-y: auto;
+  padding: 16px 0;
+  flex-shrink: 0;
+}
+.sidebar-title {
+  padding: 0 20px 12px;
+  font-size: 13px;
+  color: #6b6f82;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.step-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-left: 3px solid transparent;
+  font-size: 13px;
+}
+.step-nav-item:hover { background: #1c1f2e; }
+.step-nav-item.active {
+  background: #1a2240;
+  border-left-color: #3b82f6;
+}
+.step-nav-item.completed { color: #22c55e; }
+.step-nav-item.pending { color: #6b6f82; }
+.step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.step-nav-item.completed .step-num {
+  background: #22c55e;
+  color: #000;
+}
+.step-nav-item.active .step-num {
+  background: #3b82f6;
+  color: #fff;
+  animation: pulse 2s infinite;
+}
+.step-nav-item.pending .step-num {
+  background: #2a2d3a;
+  color: #6b6f82;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(59,130,246,0); }
+}
+.step-nav-text {
+  line-height: 1.3;
+}
+
+/* ── Main Content ────────────────────────────────────────── */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 40px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+}
+.step-content {
+  display: none;
+  animation: fadeIn 0.4s ease;
+}
+.step-content.active { display: block; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.step-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #2a2d3a;
+}
+.step-header h2 {
+  font-size: 24px;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.step-header .step-badge {
+  display: inline-block;
+  background: #3b82f6;
+  color: #fff;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+/* ── Typography ──────────────────────────────────────────── */
+h3 {
+  font-size: 18px;
+  color: #fff;
+  margin: 24px 0 12px;
+}
+p {
+  line-height: 1.7;
+  margin: 8px 0;
+  color: #c0c4d6;
+}
+ul, ol {
+  margin: 8px 0 8px 24px;
+  line-height: 1.7;
+  color: #c0c4d6;
+}
+a {
+  color: #60a5fa;
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+/* ── Code Block ──────────────────────────────────────────── */
+.code-block {
+  position: relative;
+  background: #1e2030;
+  border: 1px solid #2a2d3a;
+  border-radius: 8px;
+  margin: 16px 0;
+  overflow: hidden;
+}
+.code-block pre {
+  padding: 16px 20px;
+  overflow-x: auto;
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #a8b4d8;
+  margin: 0;
+}
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #2a2d3a;
+  border: none;
+  color: #8b8fa3;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+.copy-btn:hover { background: #3b82f6; color: #fff; }
+.copy-btn.copied { background: #22c55e; color: #000; }
+
+/* ── Terminal Widget ─────────────────────────────────────── */
+.terminal-widget {
+  background: #0d0f17;
+  border: 1px solid #2a2d3a;
+  border-radius: 8px;
+  margin: 16px 0;
+  overflow: hidden;
+}
+.terminal-title {
+  background: #1a1d27;
+  padding: 8px 16px;
+  font-size: 12px;
+  color: #6b6f82;
+  border-bottom: 1px solid #2a2d3a;
+}
+.terminal-body {
+  padding: 16px 20px;
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #a8d8a8;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.t-prompt { color: #3b82f6; }
+.t-comment { color: #6b6f82; font-style: italic; }
+
+/* ── ASCII Art ───────────────────────────────────────────── */
+.ascii-art {
+  background: #1a1d27;
+  border: 1px solid #2a2d3a;
+  border-radius: 8px;
+  padding: 16px 20px;
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Menlo, monospace;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #a8b4d8;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 16px 0;
+}
+
+/* ── Tree Diagram ────────────────────────────────────────── */
+.tree {
+  background: #1a1d27;
+  border: 1px solid #2a2d3a;
+  border-radius: 8px;
+  padding: 16px 20px;
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #a8b4d8;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 16px 0;
+}
+
+/* ── Tables ──────────────────────────────────────────────── */
+.tool-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 13px;
+}
+.tool-table th {
+  background: #1a1d27;
+  padding: 10px 14px;
+  text-align: left;
+  color: #8b8fa3;
+  font-weight: 600;
+  border-bottom: 2px solid #2a2d3a;
+}
+.tool-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #1e2030;
+  vertical-align: top;
+}
+.tool-table tr:hover td { background: #1a1d27; }
+code {
+  background: #1e2030;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 0.9em;
+  color: #f0a0a0;
+}
+
+/* ── Badge ───────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge-green { background: #166534; color: #4ade80; }
+.badge-blue { background: #1e3a5f; color: #60a5fa; }
+.badge-yellow { background: #713f12; color: #fbbf24; }
+
+/* ── Tooltip ─────────────────────────────────────────────── */
+.tooltip-term {
+  border-bottom: 1px dashed #3b82f6;
+  cursor: help;
+  position: relative;
+}
+.tooltip-term:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e2030;
+  border: 1px solid #3b82f6;
+  color: #e0e0e0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  width: 280px;
+  z-index: 1000;
+  white-space: normal;
+}
+
+/* ── Info / Warning Boxes ────────────────────────────────── */
+.info-box {
+  background: #1a2744;
+  border-left: 4px solid #3b82f6;
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.warning-box {
+  background: #2a1f0a;
+  border-left: 4px solid #f59e0b;
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* ── Check Complete ──────────────────────────────────────── */
+.check-complete {
+  margin: 24px 0 8px;
+  padding: 16px;
+  background: #1a1d27;
+  border: 1px solid #2a2d3a;
+  border-radius: 8px;
+}
+.check-complete label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #a8d8a8;
+}
+.check-complete input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #22c55e;
+}
+
+/* ── Navigation Buttons ──────────────────────────────────── */
+.nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid #2a2d3a;
+}
+.btn-nav {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+.btn-prev {
+  background: #1e2030;
+  color: #8b8fa3;
+  border: 1px solid #2a2d3a;
+}
+.btn-prev:hover { background: #2a2d3a; color: #e0e0e0; }
+.btn-next {
+  background: #3b82f6;
+  color: #fff;
+}
+.btn-next:hover { background: #2563eb; }
+.btn-next:disabled {
+  background: #2a2d3a;
+  color: #6b6f82;
+  cursor: not-allowed;
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+.footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 12px;
+  color: #6b6f82;
+  border-top: 1px solid #2a2d3a;
+  margin-top: 40px;
+}
+
+/* ── Mobile Responsive ───────────────────────────────────── */
+.mobile-nav {
+  display: none;
+  background: #151721;
+  border-bottom: 1px solid #2a2d3a;
+  padding: 12px 16px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.mobile-nav-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  margin-right: 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid #2a2d3a;
+}
+.mobile-nav-item.active {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
+.mobile-nav-item.completed { color: #22c55e; border-color: #22c55e; }
+
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .mobile-nav { display: block; }
+  .main-content { padding: 20px 16px; }
+  .step-nav-text { font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Progress Bar -->
+<div class="progress-bar-container">
+  <span class="progress-label" id="progressLabel">第 1 步 / 共 13 步</span>
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+  <button class="btn-reset" onclick="resetProgress()">重置进度</button>
+</div>
+
+<!-- Mobile Nav -->
+<div class="mobile-nav" id="mobileNav"></div>
+
+<!-- Layout -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-title">📚 教程步骤</div>
+    <div id="stepNav"></div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content" id="mainContent">
+    <div class="step-content" id="step-1">
+  <div class="step-header">
+    <div class="step-badge">第 1 步 / 共 13 步</div>
+    <h2>项目概览 — 我们手上有什么？</h2>
+  </div>
+
+<h3>🗂️ 项目目录结构</h3>
+<p>下面是 <code>microservices-demo/</code> 的目录树形图：</p>
+<pre class="tree">
+microservices-demo/
+├── src/                    # 11 个微服务的源码（每种语言一个目录）
+│   ├── frontend/           # Go    - 前端 Web 服务
+│   ├── cartservice/        # C#    - 购物车服务（用 Redis 存储）
+│   ├── productcatalogservice/ # Go  - 商品目录服务
+│   ├── currencyservice/    # Node.js - 货币转换服务
+│   ├── paymentservice/     # Node.js - 支付服务（模拟）
+│   ├── shippingservice/    # Go   - 物流服务（模拟）
+│   ├── emailservice/       # Python - 邮件服务（模拟）
+│   ├── checkoutservice/    # Go   - 结账编排服务（核心）
+│   ├── recommendationservice/ # Python - 推荐服务
+│   ├── adservice/          # Java - 广告服务
+│   └── loadgenerator/      # Python/Locust - 负载生成器
+├── protos/                 # gRPC 接口定义（Protocol Buffers）
+├── release/                # 正式发布的 Kubernetes 部署文件
+│   └── kubernetes-manifests.yaml  # 一键部署所有服务的 YAML
+├── kustomize/              # Kustomize 配置（另一种 K8s 部署方式）
+├── helm-chart/             # Helm Chart（K8s 包管理器配置）
+├── kubernetes-manifests/   # 额外的 K8s manifest 示例
+├── docs/                   # 项目文档和截图
+├── skaffold.yaml           # Skaffold 配置（开发用热重载工具）
+├── README.md               # 项目说明
+└── 技术说明文档.md          # 中文技术说明（已生成）
+</pre>
+
+<h3>🏗️ 系统架构总览（ASCII 图）</h3>
+<pre class="ascii-art">
+┌──────────────────────────────────────────────────────────────────┐
+│                         用户浏览器                                │
+│                  http://localhost:8080                            │
+└─────────────────────────┬────────────────────────────────────────┘
+                          │ HTTP
+                          ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                    frontend (Go)                                  │
+│             Web 界面 + 路由 + 会话管理 + gRPC 客户端               │
+└──┬──────────┬──────────┬──────────┬──────────┬──────────┬────────┘
+   │          │          │          │          │          │
+   ▼          ▼          ▼          ▼          ▼          ▼
+┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐
+│Product ││ Cart  ││Checkout││Currency││Payment ││Shipping│
+│Service ││Service││Service ││Service ││Service ││Service │
+│ (Go)   ││ (C#)  ││ (Go)   ││(Node)  ││(Node)  ││ (Go)   │
+└────────┘└────┬───┘└────────┘└────────┘└────────┘└────────┘
+               │         ▲
+               │         │
+               ▼         │
+         ┌─────────┐     │
+         │  Redis  │     │
+         │ (缓存)  │     │
+         └─────────┘     │
+                          │
+   ┌──────────┐  ┌───────┴──────┐  ┌────────────┐
+   │Ad Service│  │Recommendation│  │Email Service│
+   │ (Java)   │  │ Service      │  │ (Python)    │
+   └──────────┘  │ (Python)     │  └────────────┘
+                 └───────────────┘
+</pre>
+
+<p><strong>一句话总结</strong>：这是一个完整的"在线精品店"，用 11 种不同语言写的微服务协作完成电商功能，全部跑在 Kubernetes 上。</p>
+
+<p>📺 <strong>B站推荐视频</strong>：</p>
+<ul>
+  <li><a href="https://search.bilibili.com/all?keyword=微服务架构入门" target="_blank">搜索"微服务架构入门"</a> — 了解什么是微服务</li>
+  <li><a href="https://search.bilibili.com/all?keyword=Online+Boutique+微服务" target="_blank">搜索"Online Boutique 微服务"</a> — 本项目介绍视频</li>
+</ul>
+
+  <div class="nav-buttons">
+    <div></div>
+    <button class="btn-nav btn-next" onclick="nextStep()">下一步 →</button>
+  </div>
+</div>
+<div class="step-content" id="step-2">
+  <div class="step-header">
+    <div class="step-badge">第 2 步 / 共 13 步</div>
+    <h2>环境检查 — 你的电脑准备好了吗？</h2>
+  </div>
+
+<h3>🧰 工具清单</h3>
+<table class="tool-table">
+<thead><tr><th>工具</th><th>必需？</th><th>作用</th><th>安装命令</th></tr></thead>
+<tbody>
+<tr><td>Docker Desktop</td><td>✅ 必需</td><td>运行容器的引擎（所有服务的"集装箱"）</td><td><code>brew install --cask docker</code></td></tr>
+<tr><td>Minikube</td><td>✅ 必需</td><td>在本地跑一个迷你 Kubernetes 集群</td><td><code>brew install minikube</code></td></tr>
+<tr><td>kubectl</td><td>✅ 必需</td><td>Kubernetes 的命令行工具（操作集群的遥控器）</td><td><code>brew install kubectl</code></td></tr>
+<tr><td>Go</td><td>⭕ 可选</td><td>编译 Go 语言微服务（只用现成镜像可不装）</td><td><code>brew install go</code></td></tr>
+<tr><td>Node.js</td><td>⭕ 可选</td><td>编译 Node.js 微服务</td><td><code>brew install node</code></td></tr>
+<tr><td>Python 3</td><td>⭕ 可选</td><td>编译 Python 微服务</td><td><code>brew install python</code></td></tr>
+<tr><td>Git</td><td>✅ 必需</td><td>克隆项目代码</td><td><code>brew install git</code></td></tr>
+</tbody>
+</table>
+
+<h3>🔍 一键检查命令</h3>
+<p>复制下面的命令，在你的<strong>终端（Terminal）</strong>里执行，看看哪些工具已经装好了：</p>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre>echo "=== 环境检查 ==="
+echo "Docker:"  && docker --version  2>/dev/null || echo "  ❌ 未安装"
+echo "Minikube:" && minikube version 2>/dev/null || echo "  ❌ 未安装"
+echo "kubectl:"  && kubectl version --client 2>/dev/null || echo "  ❌ 未安装"
+echo "Go:"       && go version        2>/dev/null || echo "  ❌ 未安装"
+echo "Node:"     && node --version    2>/dev/null || echo "  ❌ 未安装"
+echo "Python:"   && python3 --version 2>/dev/null || echo "  ❌ 未安装"
+echo "Git:"      && git --version     2>/dev/null || echo "  ❌ 未安装"</pre>
+</div>
+
+<h3>🛠️ 未安装工具的安装命令</h3>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre># 安装 Homebrew（如果没有的话）
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 依次安装所需工具
+brew install --cask docker    # Docker Desktop（安装后需手动启动）
+brew install minikube
+brew install kubectl
+brew install git
+brew install go               # 可选
+brew install node              # 可选
+brew install python            # 可选</pre>
+</div>
+
+<p>📺 <strong>B站推荐视频</strong>：</p>
+<ul>
+  <li><a href="https://search.bilibili.com/all?keyword=Docker入门教程" target="_blank">搜索"Docker入门教程"</a></li>
+  <li><a href="https://search.bilibili.com/all?keyword=Kubernetes入门" target="_blank">搜索"Kubernetes入门"</a></li>
+  <li><a href="https://search.bilibili.com/all?keyword=macOS+终端命令行基础" target="_blank">搜索"macOS 终端命令行基础"</a></li>
+</ul>
+
+<div class="check-complete">
+  <label>
+    <input type="checkbox" id="check-step-2" onchange="toggleStepComplete(2)">
+    ✅ 我已检查完环境，需要的工具已安装好（或我知道哪些还没装）
+  </label>
+</div>
+
+  <div class="nav-buttons">
+    <button class="btn-nav btn-prev" onclick="prevStep()">← 上一步</button>
+    <button class="btn-nav btn-next" onclick="nextStep()">下一步 →</button>
+  </div>
+</div>
+<div class="step-content" id="step-3">
+  <div class="step-header">
+    <div class="step-badge">第 3 步 / 共 13 步</div>
+    <h2>安装 Docker — 所有服务的「集装箱」</h2>
+  </div>
+
+<h3>📦 Docker 是什么？</h3>
+<p><strong>通俗类比</strong>：Docker 就像<strong>集装箱</strong>。传统方式下，每个服务需要不同的运行环境（Go 需要 Go 运行时、Python 需要 Python 解释器……），就像货物没有集装箱，运输起来很麻烦。Docker 把"程序 + 运行环境"打包成一个"集装箱"（镜像）， anywhere 都能跑。</p>
+
+<h3>🍎 macOS 安装 Docker Desktop</h3>
+<ol>
+  <li>访问 <a href="https://www.docker.com/products/docker-desktop/" target="_blank">docker.com</a> 下载 Docker Desktop for Mac</li>
+  <li>双击下载的 <code>.dmg</code> 文件，拖入 Applications 文件夹</li>
+  <li>在启动台（Launchpad）里找到 Docker 图标，点击启动</li>
+  <li>启动后，菜单栏右上角会出现一个鲸鱼图标 🐳，表示 Docker 正在运行</li>
+</ol>
+
+<h3>✅ 安装后验证</h3>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre># 检查 Docker 版本
+docker --version
+# 预期输出：Docker version 26.x.x, build xxxxx
+
+# 运行 hello-world 测试容器
+docker run hello-world
+# 预期输出：Hello from Docker! 表示安装成功</pre>
+</div>
+
+<div class="terminal-widget">
+<div class="terminal-title">🖥️ 终端模拟器 — 预期输出</div>
+<div class="terminal-body">
+<span class="t-prompt">$</span> docker --version<br>
+Docker version 26.1.3, build 26.1.3-0ubuntu1~22.04.1<br>
+<br>
+<span class="t-prompt">$</span> docker run hello-world<br>
+<br>
+Hello from Docker!<br>
+This message shows that your installation appears to be working correctly.<br>
+<br>
+To generate this message, Docker took the following steps:<br>
+ 1. The Docker client contacted the Docker daemon.<br>
+ 2. The Docker daemon pulled the "hello-world" image from the Docker Hub.<br>
+ 3. The Docker daemon created a new container from that image.<br>
+ 4. The Docker daemon streamed that output to the Docker client.<br>
+</div>
+</div>
+
+<h3>⚠️ 常见安装问题</h3>
+<ul>
+  <li><strong>Docker 启动后一直转圈</strong>：去"系统设置 → 隐私与安全"允许 Docker 内核扩展，然后重启 Docker</li>
+  <li><strong>报错 "Cannot connect to the Docker daemon"</strong>：Docker Desktop 没启动，去启动台打开它</li>
+  <li><strong>Apple Silicon (M1/M2/M3) 芯片</strong>：下载时选择 "Apple Chip" 版本，不要用 Intel 版</li>
+</ul>
+
+<p>📺 <strong>B站推荐视频</strong>：</p>
+<ul>
+  <li><a href="https://search.bilibili.com/all?keyword=Docker桌面版安装教程" target="_blank">搜索"Docker桌面版安装教程"</a></li>
+  <li><a href="https://search.bilibili.com/all?keyword=Docker容器详解" target="_blank">搜索"Docker容器详解"</a></li>
+</ul>
+
+<div class="check-complete">
+  <label>
+    <input type="checkbox" id="check-step-3" onchange="toggleStepComplete(3)">
+    ✅ 我已安装 Docker Desktop 并验证 hello-world 运行成功
+  </label>
+</div>
+
+  <div class="nav-buttons">
+    <button class="btn-nav btn-prev" onclick="prevStep()">← 上一步</button>
+    <button class="btn-nav btn-next" onclick="nextStep()">下一步 →</button>
+  </div>
+</div>
+<div class="step-content" id="step-4">
+  <div class="step-header">
+    <div class="step-badge">第 4 步 / 共 13 步</div>
+    <h2>安装 Minikube — 你的个人 Kubernetes 集群</h2>
+  </div>
+
+<h3>🏠 为什么需要 Minikube？</h3>
+<p><strong>通俗类比</strong>：Kubernetes（K8s）就像一个<strong>数据中心的管理系统</strong>，负责调度成百上千个容器。Minikube 就是在你自己的笔记本电脑里，虚拟出一个迷你数据中心，让你不用买云服务器就能学习 K8s。</p>
+
+<h3>📥 安装 Minikube</h3>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre># 用 Homebrew 安装（推荐）
+brew install minikube
+
+# 验证安装
+minikube version
+# 预期输出：minikube version: 1.33.x</pre>
+</div>
+
+<h3>🚀 启动 Minikube 集群</h3>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre># 启动 Minikube（分配 4 核 CPU 和 8GB 内存）
+minikube start --cpus=4 --memory=8192
+
+# 说明：
+# --cpus=4    给虚拟机分配 4 个 CPU 核心
+# --memory=8192  分配 8GB 内存（8192 MB）
+# 注意：这个命令会下载一个 ISO 镜像，首次运行需要几分钟</pre>
+</div>
+
+<div class="terminal-widget">
+<div class="terminal-title">🖥️ 终端模拟器 — 启动过程</div>
+<div class="terminal-body">
+<span class="t-prompt">$</span> minikube start --cpus=4 --memory=8192<br>
+😄  minikube v1.33.1 on Darwin 26.4.1<br>
+✨  Automatically selected the docker driver.<br>
+📌  Using Docker Desktop driver with root privileges<br>
+👍  Starting control plane node minikube in cluster minikube<br>
+🚜  Pulling base image ...<br>
+💾  Downloading Kubernetes v1.30.0 preload ...<br>
+🔥  Creating docker container (CPUs=4, Memory=8192MB) ...<br>
+🐳  Preparing Kubernetes v1.30.0 on Docker 26.1.3 ...<br>
+🔎  Verifying Kubernetes components...<br>
+    ▪ Using image gcr.io/k8s-minikube/storage-provisioner:v5<br>
+🌟  Enabled addons: default-storageclass, storage-provisioner<br>
+🏄  Done! kubectl is now configured to use "minikube" cluster.<br>
+</div>
+</div>
+
+<h3>✅ 验证集群状态</h3>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre>kubectl get nodes</pre>
+</div>
+
+<div class="terminal-widget">
+<div class="terminal-title">🖥️ 终端模拟器 — 预期输出</div>
+<div class="terminal-body">
+<span class="t-prompt">$</span> kubectl get nodes<br>
+NAME       STATUS   ROLES           AGE   VERSION<br>
+minikube   Ready    control-plane   2m    v1.30.0<br>
+</div>
+</div>
+
+<p>看到 <span class="badge badge-green">Ready</span> 就说明你的本地 K8s 集群已经准备好了！</p>
+
+<p>📺 <strong>B站推荐视频</strong>：</p>
+<ul>
+  <li><a href="https://search.bilibili.com/all?keyword=Minikube安装教程" target="_blank">搜索"Minikube安装教程"</a></li>
+  <li><a href="https://search.bilibili.com/all?keyword=Kubernetes入门到实战" target="_blank">搜索"Kubernetes入门到实战"</a></li>
+</ul>
+
+<div class="check-complete">
+  <label>
+    <input type="checkbox" id="check-step-4" onchange="toggleStepComplete(4)">
+    ✅ 我已成功启动 Minikube，kubectl get nodes 显示 Ready
+  </label>
+</div>
+
+  <div class="nav-buttons">
+    <button class="btn-nav btn-prev" onclick="prevStep()">← 上一步</button>
+    <button class="btn-nav btn-next" onclick="nextStep()">下一步 →</button>
+  </div>
+</div>
+<div class="step-content" id="step-5">
+  <div class="step-header">
+    <div class="step-badge">第 5 步 / 共 13 步</div>
+    <h2>了解 Kubernetes 基本操作</h2>
+  </div>
+
+<h3>🎮 kubectl 是什么？</h3>
+<p><strong>通俗类比</strong>：kubectl 就是 Kubernetes 的<strong>遥控器</strong>。就像用遥控器控制电视一样，用 kubectl 命令控制 K8s 集群里的各种资源（Pod、Service、Deployment 等）。</p>
+
+<h3>📚 核心概念速查</h3>
+<table class="tool-table">
+<thead><tr><th>概念</th><th>通俗解释</th><th>类比</th></tr></thead>
+<tbody>
+<tr><td><span class="tooltip-term" data-tip="Pod 是 K8s 的最小调度单元，里面跑着一个或多个容器（通常是一个）。就像一艘船上的一个集装箱。">Pod</span></td><td>一个运行中的容器实例</td><td>一艘船上的一个集装箱</td></tr>
+<tr><td><span class="tooltip-term" data-tip="Deployment 定义了 Pod 的副本数量和更新策略。K8s 会根据 Deployment 的描述，确保指定数量的 Pod 始终在运行。">Deployment</span></td><td>管理 Pod 的"蓝图"和副本数量</td><td>造船厂的生产计划</td></tr>
+<tr><td><span class="tooltip-term" data-tip="Service 为一组 Pod 提供稳定的访问入口，负责负载均衡。即使 Pod 的 IP 地址变了，Service 的地址不变。">Service</span></td><td>为 Pod 提供稳定的网络入口</td><td>港口的固定码头编号</td></tr>
+<tr><td><span class="tooltip-term" data-tip="Namespace 是 K8s 集群内的虚拟集群，用于隔离不同项目或团队的资源。默认情况下资源在 default namespace 中。">Namespace</span></td><td>集群内的"虚拟集群"，用于隔离资源</td><td>船坞的不同区域</td></tr>
+</tbody>
+</table>
+
+<h3>🔧 常用 kubectl 命令速览</h3>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre># 查看所有 Pod（容器实例）
+kubectl get pods
+
+# 查看所有 Service（网络服务入口）
+kubectl get services
+
+# 查看 Pod 的详细信息和事件
+kubectl describe pod <pod-name>
+
+# 查看 Pod 的运行日志
+kubectl logs <pod-name>
+
+# 实时跟踪日志（类似 tail -f）
+kubectl logs -f <pod-name>
+
+# 进入 Pod 里的容器（调试用）
+kubectl exec -it <pod-name> -- /bin/sh
+
+# 查看集群节点状态
+kubectl get nodes
+
+# 查看所有资源（概览）
+kubectl get all</pre>
+</div>
+
+<h3>🖥️ 实际操作演示</h3>
+<p>下面的终端模拟器展示了执行 <code>kubectl get pods</code> 后的典型输出（先不用管具体内容，后面部署后会看到真实的）：</p>
+
+<div class="terminal-widget">
+<div class="terminal-title">🖥️ 终端模拟器 — kubectl get pods 示例</div>
+<div class="terminal-body">
+<span class="t-prompt">$</span> kubectl get pods<br>
+NAME                               READY   STATUS    RESTARTS   AGE<br>
+currencyservice-7c8b9d4f6-x5k2m    1/1     Running   0          3m<br>
+cartservice-6d4c8f9b8-l2m7n        1/1     Running   0          3m<br>
+frontend-5f9d7c6b8-abc12           1/1     Running   0          3m<br>
+productcatalogservice-8b7d9c-x1y2z 1/1     Running   0          3m<br>
+checkoutservice-6f8d7c9b8-p3q4r    1/1     Running   0          3m<br>
+paymentservice-7d9c8b6f-x9y8z      1/1     Running   0          3m<br>
+shippingservice-5c8d9b7f-a1b2c     1/1     Running   0          3m<br>
+emailservice-6d7c8b9f-b3c4d        1/1     Running   0          3m<br>
+recommendationservice-8c9d7b-f4g5h 1/1     Running   0          3m<br>
+adservice-9d8c7b6e-c5d6e          1/1     Running   0          3m<br>
+loadgenerator-7c8d9b6f-d7e8f       1/1     Running   0          3m<br>
+</div>
+</div>
+
+<p>各列含义：</p>
+<ul>
+  <li><strong>NAME</strong>：Pod 的名字（随机后缀，每次部署都不一样）</li>
+  <li><strong>READY</strong>：<code>1/1</code> 表示 1 个容器已就绪 / 共需 1 个</li>
+  <li><strong>STATUS</strong>：<code>Running</code> 表示正在运行；常见其他状态：<code>Pending</code>（等待调度）、<code>CrashLoopBackOff</code>（启动失败反复重启）</li>
+  <li><strong>RESTARTS</strong>：容器重启次数（0 是好的，越大说明越有问题）</li>
+  <li><strong>AGE</strong>：运行了多久</li>
+</ul>
+
+<p>📺 <strong>B站推荐视频</strong>：</p>
+<ul>
+  <li><a href="https://search.bilibili.com/all?keyword=kubectl命令详解" target="_blank">搜索"kubectl命令详解"</a></li>
+  <li><a href="https://search.bilibili.com/all?keyword=Kubernetes+Pods+Service" target="_blank">搜索"Kubernetes Pods Service"</a></li>
+</ul>
+
+<div class="check-complete">
+  <label>
+    <input type="checkbox" id="check-step-5" onchange="toggleStepComplete(5)">
+    ✅ 我已了解 kubectl 的基本命令，能看懂 get pods 的输出
+  </label>
+</div>
+
+  <div class="nav-buttons">
+    <button class="btn-nav btn-prev" onclick="prevStep()">← 上一步</button>
+    <button class="btn-nav btn-next" onclick="nextStep()">下一步 →</button>
+  </div>
+</div>
+<div class="step-content" id="step-6">
+  <div class="step-header">
+    <div class="step-badge">第 6 步 / 共 13 步</div>
+    <h2>部署项目到 K8s — 一键启动所有微服务</h2>
+  </div>
+
+<h3>🚀 一键部署命令</h3>
+<p>项目提供了一个完整的 Kubernetes 部署文件 <code>release/kubernetes-manifests.yaml</code>，里面包含了所有 11 个微服务的 Deployment 和 Service 定义。一条命令就能部署全部！</p>
+
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre># 进入项目目录（如果还没进入的话）
+cd "/Users/kaisery/凯kk/SDE后端/实战项目/全栈开发项目/microservices-demo"
+
+# 一键部署所有微服务到 K8s
+kubectl apply -f ./release/kubernetes-manifests.yaml</pre>
+</div>
+
+<div class="terminal-widget">
+<div class="terminal-title">🖥️ 终端模拟器 — 部署输出</div>
+<div class="terminal-body">
+<span class="t-prompt">$</span> kubectl apply -f ./release/kubernetes-manifests.yaml<br>
+deployment.apps/currencyservice created<br>
+service/currencyservice created<br>
+deployment.apps/cartservice created<br>
+service/cartservice created<br>
+deployment.apps/productcatalogservice created<br>
+service/productcatalogservice created<br>
+deployment.apps/frontend created<br>
+service/frontend created<br>
+deployment.apps/checkoutservice created<br>
+service/checkoutservice created<br>
+deployment.apps/paymentservice created<br>
+service/paymentservice created<br>
+deployment.apps/shippingservice created<br>
+service/shippingservice created<br>
+deployment.apps/emailservice created<br>
+service/emailservice created<br>
+deployment.apps/recommendationservice created<br>
+service/recommendationservice created<br>
+deployment.apps/adservice created<br>
+service/adservice created<br>
+deployment.apps/loadgenerator created<br>
+service/redis-cart created<br>
+persistentvolumeclaim/redis-data created<br>
+...<br>
+</div>
+</div>
+
+<h3>📄 YAML 文件里有什么？</h3>
+<p>这个 YAML 文件里主要包含两种 K8s 资源：</p>
+<ul>
+  <li><strong>Deployment</strong>：定义每个微服务需要多少个副本（Pod），用哪个 Docker 镜像，以及环境变量、资源限制等</li>
+  <li><strong>Service</strong>：为每个微服务提供一个稳定的网络入口，让其他服务能通过服务名（如 <code>currencyservice</code>）访问它</li>
+  <li><strong>ConfigMap / Secret</strong>：存储配置信息和敏感数据</li>
+  <li><strong>PersistentVolumeClaim</strong>：为 Redis 提供持久化存储</li>
+</ul>
+
+<h3>⏳ 等待 Pod 启动</h3>
+<p>部署命令执行完后，Pod 不会立刻启动完成（需要拉取 Docker 镜像）。用以下命令等待所有 Pod 变成 <code>Running</code> 状态：</p>
+
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre># 实时查看 Pod 启动状态（-w 表示 watch，持续监控）
+kubectl get pods -w
+
+# 另开一个终端，或者按 Ctrl+C 停止监控后，查看最终状态
+kubectl get pods</pre>
+</div>
+
+<div class="terminal-widget">
+<div class="terminal-title">🖥️ 终端模拟器 — 所有 Pod Running 后的输出</div>
+<div class="terminal-body">
+<span class="t-prompt">$</span> kubectl get pods<br>
+NAME                               READY   STATUS    RESTARTS   AGE<br>
+adservice-7d8f9c6b8-x1y2z          1/1     Running   0          2m<br>
+cartservice-6d4c8f9b8-l2m7n        1/1     Running   0          2m<br>
+checkoutservice-6f8d7c9b8-p3q4r    1/1     Running   0          2m<br>
+currencyservice-7c8b9d4f6-x5k2m    1/1     Running   0          2m<br>
+emailservice-6d7c8b9f-b3c4d        1/1     Running   0          2m<br>
+frontend-5f9d7c6b8-abc12           1/1     Running   0          2m<br>
+loadgenerator-7c8d9b6f-d7e8f       1/1     Running   0          2m<br>
+paymentservice-7d9c8b6f-x9y8z      1/1     Running   0          2m<br>
+productcatalogservice-8b7d9c-x1y2z 1/1     Running   0          2m<br>
+recommendationservice-8c9d7b-f4g5h 1/1     Running   0          2m<br>
+shippingservice-5c8d9b7f-a1b2c     1/1     Running   0          2m<br>
+redis-cart-6d8c9b7f8-z9x8w         1/1     Running   0          2m<br>
+</div>
+</div>
+
+<p><span class="badge badge-green">STATUS = Running</span> 且 <span class="badge badge-green">READY = 1/1</span> 表示所有服务已成功启动！</p>
+
+<div class="check-complete">
+  <label>
+    <input type="checkbox" id="check-step-6" onchange="toggleStepComplete(6)">
+    ✅ 我已执行部署命令，所有 Pod 状态均为 Running
+  </label>
+</div>
+
+  <div class="nav-buttons">
+    <button class="btn-nav btn-prev" onclick="prevStep()">← 上一步</button>
+    <button class="btn-nav btn-next" onclick="nextStep()">下一步 →</button>
+  </div>
+</div>
+<div class="step-content" id="step-7">
+  <div class="step-header">
+    <div class="step-badge">第 7 步 / 共 13 步</div>
+    <h2>检查服务状态 — 确认一切正常</h2>
+  </div>
+
+<h3>🔍 检查所有 Pod 状态</h3>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre>kubectl get pods</pre>
+</div>
+<p>确认所有 12 个 Pod（11 个微服务 + 1 个 Redis）都是 <code>Running</code> 状态，且 <code>READY</code> 为 <code>1/1</code>。</p>
+
+<h3>🌐 检查所有 Service（服务入口）</h3>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre>kubectl get services</pre>
+</div>
+
+<div class="terminal-widget">
+<div class="terminal-title">🖥️ 终端模拟器 — kubectl get services 预期输出</div>
+<div class="terminal-body">
+<span class="t-prompt">$</span> kubectl get services<br>
+NAME                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE<br>
+kubernetes              ClusterIP   10.96.0.1        &lt;none&gt;        443/TCP    10m<br>
+adservice               ClusterIP   10.96.123.45     &lt;none&gt;        9555/TCP   3m<br>
+cartservice             ClusterIP   10.96.234.56     &lt;none&gt;        7070/TCP   3m<br>
+checkoutservice         ClusterIP   10.96.345.67     &lt;none&gt;        5050/TCP   3m<br>
+currencyservice         ClusterIP   10.96.456.78     &lt;none&gt;        7000/TCP   3m<br>
+emailservice            ClusterIP   10.96.567.89     &lt;none&gt;        5000/TCP   3m<br>
+frontend                ClusterIP   10.96.678.90     &lt;none&gt;        8080/TCP   3m<br>
+paymentservice          ClusterIP   10.96.789.01     &lt;none&gt;        5001/TCP   3m<br>
+productcatalogservice   ClusterIP   10.96.890.12     &lt;none&gt;        3550/TCP   3m<br>
+recommendationservice   ClusterIP   10.96.901.23     &lt;none&gt;        8080/TCP   3m<br>
+redis-cart              ClusterIP   10.96.012.34     &lt;none&gt;        6379/TCP   3m<br>
+shippingservice         ClusterIP   10.96.123.234    &lt;none&gt;        50051/TCP  3m<br>
+</div>
+</div>
+
+<p><strong>说明</strong>：<code>TYPE = ClusterIP</code> 表示这些服务只在 K8s 集群内部可访问，外部（你的浏览器）无法直接访问。所以我们需要用"端口转发"来访问 frontend。</p>
+
+<h3>📋 查看某个服务的日志</h3>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre># 查看 frontend 的日志（看看有没有报错）
+kubectl logs deployment/frontend
+
+# 实时跟踪日志（类似 tail -f）
+kubectl logs -f deployment/frontend
+
+# 查看 cartservice 的日志
+kubectl logs deployment/cartservice</pre>
+</div>
+
+<h3>🚨 如果 Pod 启动失败怎么办？</h3>
+<table class="tool-table">
+<thead><tr><th>问题现象</th><th>可能原因</th><th>排查命令</th></tr></thead>
+<tbody>
+<tr><td><code>STATUS = Pending</code></td><td>资源不足（CPU/内存不够）</td><td><code>kubectl describe pod &lt;pod-name&gt;</code> 查看事件</td></tr>
+<tr><td><code>STATUS = CrashLoopBackOff</code></td><td>容器启动后马上崩溃</td><td><code>kubectl logs &lt;pod-name&gt;</code> 查看错误日志</td></tr>
+<tr><td><code>STATUS = ImagePullBackOff</code></td><td>Docker 镜像拉取失败（网络问题）</td><td>检查网络，或配置 Docker 镜像加速</td></tr>
+<tr><td>Pod 一直没创建</td><td>YAML 文件有语法错误</td><td><code>kubectl get events</code> 查看集群事件</td></tr>
+</tbody>
+</table>
+
+<div class="check-complete">
+  <label>
+    <input type="checkbox" id="check-step-7" onchange="toggleStepComplete(7)">
+    ✅ 我已检查所有 Pod 和 Service，状态正常，无报错日志
+  </label>
+</div>
+
+  <div class="nav-buttons">
+    <button class="btn-nav btn-prev" onclick="prevStep()">← 上一步</button>
+    <button class="btn-nav btn-next" onclick="nextStep()">下一步 →</button>
+  </div>
+</div>
+<div class="step-content" id="step-8">
+  <div class="step-header">
+    <div class="step-badge">第 8 步 / 共 13 步</div>
+    <h2>访问前端页面 — 看到你的在线商店！</h2>
+  </div>
+
+<h3>🌐 端口转发 — 把集群内的服务"暴露"到本地</h3>
+<p>由于 frontend 的 Service 类型是 <code>ClusterIP</code>（只在集群内可访问），我们需要用 <code>kubectl port-forward</code> 把集群内的 8080 端口转发到本地电脑的 8080 端口。</p>
+
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre># 把 frontend 的 8080 端口转发到本地 8080
+kubectl port-forward deployment/frontend 8080:8080</pre>
+</div>
+
+<div class="terminal-widget">
+<div class="terminal-title">🖥️ 终端模拟器 — 端口转发</div>
+<div class="terminal-body">
+<span class="t-prompt">$</span> kubectl port-forward deployment/frontend 8080:8080<br>
+Forwarding from 127.0.0.1:8080 -> 8080<br>
+Forwarding from [::1]:8080 -> 8080<br>
+<span class="t-comment"># 注意：这个命令会一直运行，不要按 Ctrl+C！
+# 另开一个终端窗口来执行其他命令</span><br>
+</div>
+</div>
+
+<div class="warning-box">
+  <strong>⚠️ 重要提示</strong>：<code>kubectl port-forward</code> 会在前台持续运行，终端看起来像"卡住"了一样，这是正常的！<strong>不要按 Ctrl+C</strong>，直接打开浏览器访问即可。如需执行其他命令，请<strong>新开一个终端窗口</strong>。
+</div>
+
+<h3>🛍️ 打开浏览器访问</h3>
+<p>在浏览器中访问：<a href="http://localhost:8080" target="_blank">http://localhost:8080</a></p>
+
+<h3>📱 页面功能介绍</h3>
+<ul>
+  <li><strong>顶部导航栏</strong>：Logo、搜索框、购物车图标（显示商品数量）</li>
+  <li><strong>首页横幅</strong>：展示主打商品的大图</li>
+  <li><strong>商品列表</strong>：所有可购买的商品，每个商品显示图片、名称、价格</li>
+  <li><strong>商品详情页</strong>：点击商品后进入，显示详细描述、颜色/尺寸选项、数量选择</li>
+  <li><strong>购物车页面</strong>：点击购物车图标进入，显示已添加的商品列表和总价</li>
+  <li><strong>结账页面</strong>：填写收货地址和信用卡信息（模拟），完成下单</li>
+</ul>
+
+<div class="check-complete">
+  <label>
+    <input type="checkbox" id="check-step-8" onchange="toggleStepComplete(8)">
+    ✅ 我已成功访问 http://localhost:8080，看到了 Online Boutique 首页
+  </label>
+</div>
+
+  <div class="nav-buttons">
+    <button class="btn-nav btn-prev" onclick="prevStep()">← 上一步</button>
+    <button class="btn-nav btn-next" onclick="nextStep()">下一步 →</button>
+  </div>
+</div>
+<div class="step-content" id="step-9">
+  <div class="step-header">
+    <div class="step-badge">第 9 步 / 共 13 步</div>
+    <h2>浏览商品 — 第一次操作</h2>
+  </div>
+
+<h3>🛍️ 在浏览器中操作</h3>
+<ol>
+  <li>打开 <a href="http://localhost:8080" target="_blank">http://localhost:8080</a>（确保端口转发还在运行）</li>
+  <li>在首页可以看到商品列表，每个商品显示图片、名称和价格</li>
+  <li>点击任意一个商品（比如 "Sunglasses"），进入商品详情页</li>
+  <li>在详情页可以看到商品描述、可选颜色、价格等信息</li>
+</ol>
+
+<h3>⚙️ 背后发生了什么？（请求调用链）</h3>
+<pre class="ascii-art">
+用户在浏览器点击商品
+        │
+        ▼  HTTP GET /product/ABC123
+┌──────────────────────────────────┐
+│         frontend (Go)             │
+│  - 接收 HTTP 请求                 │
+│  - 调用 productcatalogservice     │
+│    gRPC: GetProduct(ABC123)       │
+└──────────────┬───────────────────┘
+               │  gRPC (端口 3550)
+               ▼
+┌──────────────────────────────────┐
+│  productcatalogservice (Go)       │
+│  - 从内存/JSON 里查找商品数据      │
+│  - 返回商品详情（名称、价格、      │
+│    描述、图片URL等）                │
+└──────────────┬───────────────────┘
+               │  gRPC 返回
+               ▼
+┌──────────────────────────────────┐
+│         frontend (Go)             │
+│  - 用返回的数据渲染 HTML 模板      │
+│  - 返回渲染好的 HTML 页面          │
+└──────────────────────────────────┘
+        │
+        ▼  浏览器展示商品详情页
+</pre>
+
+<h3>🔍 查看 productcatalogservice 的日志</h3>
+<p>打开另一个终端窗口，执行：</p>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre>kubectl logs -f deployment/productcatalogservice</pre>
+</div>
+
+<div class="terminal-widget">
+<div class="terminal-title">🖥️ 终端模拟器 — productcatalogservice 日志</div>
+<div class="terminal-body">
+<span class="t-comment"># 访问商品页面后，会看到类似日志：</span><br>
+2024/05/27 10:23:45 ListProducts: page_size=10<br>
+2024/05/27 10:23:45 GetProduct: product_id="OLJCESPC7Z"</pre>
+</div>
+</div>
+
+<p><strong>小结</strong>：每次你在浏览器里点击商品，frontend 都会通过 gRPC 调用 productcatalogservice 获取商品数据，然后渲染成 HTML 返回给浏览器。</p>
+
+  <div class="nav-buttons">
+    <button class="btn-nav btn-prev" onclick="prevStep()">← 上一步</button>
+    <button class="btn-nav btn-next" onclick="nextStep()">下一步 →</button>
+  </div>
+</div>
+<div class="step-content" id="step-10">
+  <div class="step-header">
+    <div class="step-badge">第 10 步 / 共 13 步</div>
+    <h2>添加购物车 — 体验微服务协作</h2>
+  </div>
+
+<h3>🛒 在浏览器中操作</h3>
+<ol>
+  <li>在商品详情页，选择数量（默认 1），点击 <strong>"Add to Cart"</strong> 按钮</li>
+  <li>页面顶部右上角的购物车图标会显示商品数量（变成 1）</li>
+  <li>点击购物车图标，进入购物车页面，可以看到已添加的商品</li>
+  <li>在购物车页面可以修改数量或删除商品</li>
+</ol>
+
+<h3>⚙️ 背后发生了什么？（数据流图）</h3>
+<pre class="ascii-art">
+用户点击 "Add to Cart"
+        │
+        ▼  HTTP POST /cart
+┌──────────────────────────────────┐
+│         frontend (Go)             │
+│  - 从 session 里获取用户ID        │
+│  - 调用 cartservice gRPC:         │
+│    AddItem(userId, productId,     │
+│            quantity)               │
+└──────────────┬───────────────────┘
+               │  gRPC (端口 7070)
+               ▼
+┌──────────────────────────────────┐
+│      cartservice (C#)             │
+│  - 接收请求                       │
+│  - 连接 Redis（集群内的 redis-cart │
+│    Service）                       │
+│  - 把购物车数据写入 Redis:         │
+│    Key = userId                   │
+│    Value = [{productId, quantity}]│
+└──────────────┬───────────────────┘
+               │  写入 Redis
+               ▼
+┌──────────────────────────────────┐
+│         Redis (缓存)               │
+│  - 存储每个用户的购物车内容        │
+│  - 数据格式：JSON 序列化           │
+└──────────────────────────────────┘
+</pre>
+
+<h3>🔍 查看 cartservice 的日志</h3>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre>kubectl logs -f deployment/cartservice</pre>
+</div>
+
+<div class="terminal-widget">
+<div class="terminal-title">🖥️ 终端模拟器 — cartservice 日志</div>
+<div class="terminal-body">
+<span class="t-comment"># 添加购物车后，会看到类似日志：</span><br>
+info: CartService[0]<br>
+      AddItem: userId="abc123", productId="OLJCESPC7Z", quantity=1<br>
+info: CartService[0]<br>
+      GetCart: userId="abc123"<br>
+</div>
+</div>
+
+<h3>💡 为什么用 Redis？</h3>
+<p>购物车数据需要<strong>快速读写</strong>（用户频繁加购/删购），而且不需要永久存储（用户退出后购物车可以清空）。Redis 是内存数据库，读写速度极快（毫秒级），非常适合这个场景。</p>
+
+<p><strong>类比</strong>：Redis 就像超市门口的<strong>存包柜</strong>，取放东西非常快，但空间有限（内存），适合临时存放。</p>
+
+  <div class="nav-buttons">
+    <button class="btn-nav btn-prev" onclick="prevStep()">← 上一步</button>
+    <button class="btn-nav btn-next" onclick="nextStep()">下一步 →</button>
+  </div>
+</div>
+<div class="step-content" id="step-11">
+  <div class="step-header">
+    <div class="step-badge">第 11 步 / 共 13 步</div>
+    <h2>下单结账 — 完整的微服务编排</h2>
+  </div>
+
+<h3>💳 在浏览器中操作</h3>
+<ol>
+  <li>在购物车页面，点击 <strong>"Proceed to Checkout"</strong></li>
+  <li>填写收货信息（都是模拟数据，可以随便填）：
+    <ul>
+      <li>Email：your@email.com</li>
+      <li>收货地址：123 Main St, Anytown, USA</li>
+      <li>信用卡号：4432-8015-6152-0454（项目提供的测试卡号）</li>
+      <li>过期时间：04/2027</li>
+      <li>CVV：123</li>
+    </ul>
+  </li>
+  <li>点击 <strong>"Place Order"</strong> 按钮</li>
+  <li>等待几秒后，会看到订单确认页面，显示订单号</li>
+</ol>
+
+<h3>⚙️ 背后发生了什么？（完整调用链时序图）</h3>
+<pre class="ascii-art">
+用户点击 "Place Order"
+        │
+        ▼  HTTP POST /cart/checkout
+┌──────────────────────────────────────────────────────────────┐
+│                   frontend (Go)                               │
+│  调用 checkoutservice gRPC: PlaceOrder(...)                   │
+└──────────────────────┬───────────────────────────────────────┘
+                       │
+                       ▼
+┌──────────────────────────────────────────────────────────────┐
+│                checkoutservice (Go)                           │
+│  "结账编排服务" — 像交响乐指挥，协调下面所有服务               │
+│                                                              │
+│  1. 调用 cartservice: GetCart(userId)                        │
+│     → 获取用户购物车里的商品列表                               │
+│                                                              │
+│  2. 调用 productcatalogservice: GetProduct(id) x N           │
+│     → 获取每个商品的详细信息（价格等）                          │
+│                                                              │
+│  3. 调用 currencyservice: Convert(...)                       │
+│     → 把价格转换成用户首选货币（如有设置）                      │
+│                                                              │
+│  4. 调用 shippingservice: GetQuote(...)                      │
+│     → 获取运费报价                                           │
+│                                                              │
+│  5. 调用 paymentservice: Charge(...)                         │
+│     → 模拟扣款（不会真的扣钱！）                               │
+│                                                              │
+│  6. 调用 shippingservice: Ship(...)                          │
+│     → 模拟安排物流发货                                       │
+│                                                              │
+│  7. 调用 emailservice: SendOrderConfirmation(...)            │
+│     → 模拟发送订单确认邮件                                    │
+│                                                              │
+│  8. 调用 cartservice: EmptyCart(userId)                      │
+│     → 清空用户购物车                                         │
+│                                                              │
+│  返回：订单号（如 "ORDER-12345"）                             │
+└──────────────────────────────────────────────────────────────┘
+        │
+        ▼  返回订单号给 frontend
+┌──────────────────────────────────────────────────────────────┐
+│                   frontend (Go)                               │
+│  渲染订单确认页面，展示订单号                                   │
+└──────────────────────────────────────────────────────────────┘
+</pre>
+
+<h3>🔍 逐个查看各服务日志，追踪请求</h3>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre># 在多个终端窗口分别执行，追踪整个调用链
+kubectl logs -f deployment/checkoutservice
+kubectl logs -f deployment/cartservice
+kubectl logs -f deployment/productcatalogservice
+kubectl logs -f deployment/currencyservice
+kubectl logs -f deployment/paymentservice
+kubectl logs -f deployment/shippingservice
+kubectl logs -f deployment/emailservice</pre>
+</div>
+
+<p>下单后，你会看到各服务的日志几乎<strong>同时</strong>出现新的记录，这就是微服务协作的魅力！</p>
+
+<div class="info-box">
+  <strong>💡 小知识</strong>：checkoutservice 是整个系统的"大脑"，它不存储任何数据，只负责<strong>编排</strong>（Orchestration）—— 按顺序调用其他服务，把结果拼装起来，完成复杂的业务逻辑。
+</div>
+
+  <div class="nav-buttons">
+    <button class="btn-nav btn-prev" onclick="prevStep()">← 上一步</button>
+    <button class="btn-nav btn-next" onclick="nextStep()">下一步 →</button>
+  </div>
+</div>
+<div class="step-content" id="step-12">
+  <div class="step-header">
+    <div class="step-badge">第 12 步 / 共 13 步</div>
+    <h2>使用负载生成器 — 模拟真实流量</h2>
+  </div>
+
+<h3>🤖 负载生成器是什么？</h3>
+<p><strong>通俗类比</strong>：负载生成器就像一个<strong>专业的"托儿"团队</strong>。他们模拟成百上千个真实用户，不停地浏览商品、加购物车、下单，用来测试系统在高并发下的表现。</p>
+<p>项目里自带了一个基于 <a href="https://locust.io/" target="_blank">Locust</a> 的负载生成器（Python 写的），部署后自动开始"假装"用户访问你的网站。</p>
+
+<h3>📊 查看负载生成器的日志</h3>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre>kubectl logs -f deployment/loadgenerator</pre>
+</div>
+
+<div class="terminal-widget">
+<div class="terminal-title">🖥️ 终端模拟器 — 负载生成器日志</div>
+<div class="terminal-body">
+<span class="t-comment"># 会看到类似输出：</span><br>
+[2024-05-27 10:30:00,123] loadgenerator-xxxx INFO     Starting Locust<br>
+[2024-05-27 10:30:00,456] INFO     Hatching and swarming 10 users at 1.00 users/s<br>
+[2024-05-27 10:30:10,789] INFO     All users hatched: 10<br>
+[2024-05-27 10:30:15,012] INFO     GET /product/OLJCESPC7Z  200 OK (0.045s)<br>
+[2024-05-27 10:30:16,345] INFO     POST /cart              200 OK (0.032s)<br>
+[2024-05-27 10:30:18,678] INFO     GET /checkout           200 OK (0.028s)<br>
+<span class="t-comment"># 这些就是"模拟用户"的访问记录</span><br>
+</div>
+</div>
+
+<h3>📈 观察各服务的资源使用</h3>
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre># 查看所有 Pod 的 CPU 和内存使用情况
+kubectl top pods</pre>
+</div>
+
+<div class="terminal-widget">
+<div class="terminal-title">🖥️ 终端模拟器 — kubectl top pods 预期输出</div>
+<div class="terminal-body">
+<span class="t-prompt">$</span> kubectl top pods<br>
+NAME                               CPU(cores)   MEMORY(bytes)<br>
+adservice-7d8f9c6b8-x1y2z          5m           45Mi<br>
+cartservice-6d4c8f9b8-l2m7n        12m          85Mi<br>
+checkoutservice-6f8d7c9b8-p3q4r    25m          78Mi<br>
+currencyservice-7c8b9d4f6-x5k2m    150m         65Mi<br>
+emailservice-6d7c8b9f-b3c4d        8m           42Mi<br>
+frontend-5f9d7c6b8-abc12           45m          68Mi<br>
+loadgenerator-7c8d9b6f-d7e8f       120m         120Mi<br>
+paymentservice-7d9c8b6f-x9y8z      18m          55Mi<br>
+productcatalogservice-8b7d9c-x1y2z 15m          52Mi<br>
+recommendationservice-8c9d7b-f4g5h 22m          78Mi<br>
+shippingservice-5c8d9b7f-a1b2c     10m          48Mi<br>
+redis-cart-6d8c9b7f8-z9x8w         5m           25Mi<br>
+</div>
+</div>
+
+<p><strong>说明</strong>：</p>
+<ul>
+  <li><code>CPU(cores)</code>：CPU 使用量，<code>150m</code> 表示用了 0.15 个 CPU 核心</li>
+  <li><code>MEMORY(bytes)</code>：内存使用量，<code>65Mi</code> 表示用了 65 MB 内存</li>
+  <li><code>currencyservice</code> 的 CPU 通常最高，因为它是"被调用最多"的服务（几乎每个页面都会触发货币转换）</li>
+</ul>
+
+<h3>🚀 理解微服务的弹性伸缩</h3>
+<p>在真实的 Kubernetes 生产环境中，我们可以配置 <strong>HPA (Horizontal Pod Autoscaler)</strong>，当 CPU 使用率超过某个阈值（如 70%）时，K8s 会自动增加该服务的 Pod 数量（比如从 1 个变成 3 个），实现"自动扩容"。</p>
+<p>本项目为了简单，每个服务固定 1 个 Pod，但你可以尝试修改 YAML 文件里的 <code>replicas</code> 字段来体验多副本！</p>
+
+  <div class="nav-buttons">
+    <button class="btn-nav btn-prev" onclick="prevStep()">← 上一步</button>
+    <button class="btn-nav btn-next" onclick="nextStep()">下一步 →</button>
+  </div>
+</div>
+<div class="step-content" id="step-13">
+  <div class="step-header">
+    <div class="step-badge">第 13 步 / 共 13 步</div>
+    <h2>清理和后续学习</h2>
+  </div>
+
+<h3>🧹 如何清理（停止并删除所有资源）</h3>
+<p>当你玩够了，想清理环境时：</p>
+
+<div class="code-block">
+<button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+<pre># 删除所有部署的微服务（保留 Minikube 集群）
+kubectl delete -f ./release/kubernetes-manifests.yaml
+
+# 停止 Minikube 集群（保留集群配置，下次可以快速启动）
+minikube stop
+
+# 彻底删除 Minikube 集群（释放所有资源）
+minikube delete</pre>
+</div>
+
+<h3>📚 后续学习建议</h3>
+<ol>
+  <li><strong>修改代码，重新构建镜像</strong>：尝试修改某个微服务的代码（比如 frontend 的 HTML 模板），然后用 Docker 重新构建镜像并部署</li>
+  <li><strong>添加一个新的微服务</strong>：比如一个"评价服务"，让用户可以对商品写评价</li>
+  <li><strong>学习 Istio 服务网格</strong>：项目包含了 <code>istio-manifests/</code> 目录，可以学习如何用 Istio 实现流量管理、熔断、监控等高级功能</li>
+  <li><strong>部署到云端 GKE</strong>：把项目部署到 Google Kubernetes Engine，体验真实的云原生环境</li>
+  <li><strong>学习 gRPC 和 Protocol Buffers</strong>：阅读 <code>protos/</code> 目录下的 <code>.proto</code> 文件，理解服务接口定义</li>
+</ol>
+
+<h3>🔗 相关资源链接</h3>
+<ul>
+  <li><a href="https://github.com/GoogleCloudPlatform/microservices-demo" target="_blank">项目 GitHub 主页</a></li>
+  <li><a href="https://grpc.io/docs/" target="_blank">gRPC 官方文档</a></li>
+  <li><a href="https://kubernetes.io/docs/home/" target="_blank">Kubernetes 官方文档</a></li>
+  <li><a href="https://docs.docker.com/" target="_blank">Docker 官方文档</a></li>
+  <li><a href="file:///Users/kaisery/凯kk/SDE后端/实战项目/全栈开发项目/microservices-demo/技术说明文档.html" target="_blank">本地技术说明文档（HTML版）</a></li>
+  <li><a href="file:///Users/kaisery/凯kk/SDE后端/实战项目/全栈开发项目/microservices-demo/技术说明文档.md" target="_blank">本地技术说明文档（Markdown版）</a></li>
+</ul>
+
+<h3>🎓 B站进阶学习视频推荐</h3>
+<ul>
+  <li><a href="https://search.bilibili.com/all?keyword=云原生实战" target="_blank">搜索"云原生实战"</a> — 系统学习云原生技术栈</li>
+  <li><a href="https://search.bilibili.com/all?keyword=Istio服务网格" target="_blank">搜索"Istio服务网格"</a> — 进阶：服务网格</li>
+  <li><a href="https://search.bilibili.com/all?keyword=gRPC+Protocol+Buffers" target="_blank">搜索"gRPC Protocol Buffers"</a> — 深入理解 gRPC</li>
+  <li><a href="https://search.bilibili.com/all?keyword=Go语言微服务实战" target="_blank">搜索"Go语言微服务实战"</a> — 用 Go 写微服务</li>
+</ul>
+
+<br>
+<div class="info-box">
+  <strong>🎉 恭喜你！</strong><br>
+  你已经完成了 Online Boutique 微服务项目从零到一的完整学习！你现在理解了微服务架构、Docker 容器、Kubernetes 部署、gRPC 通信等核心概念。继续深入学习，你将成为一名优秀的后端工程师！
+</div>
+
+  <div class="nav-buttons">
+    <button class="btn-nav btn-prev" onclick="prevStep()">← 上一步</button>
+    <button class="btn-nav btn-next" onclick="alert('🎉 恭喜完成全部教程！')">🎉 完成！</button>
+  </div>
+</div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  Online Boutique 微服务实战 — 交互式启动教程<br>
+  生成时间：2026年5月27日 &nbsp;|&nbsp; 基于 GoogleCloudPlatform/microservices-demo
+</div>
+
+<script>
+// ── Step Data ──────────────────────────────────────────────
+const steps = [{"id": 1, "title": "项目概览 — 我们手上有什么？"}, {"id": 2, "title": "环境检查 — 你的电脑准备好了吗？"}, {"id": 3, "title": "安装 Docker — 所有服务的「集装箱」"}, {"id": 4, "title": "安装 Minikube — 你的个人 Kubernetes 集群"}, {"id": 5, "title": "了解 Kubernetes 基本操作"}, {"id": 6, "title": "部署项目到 K8s — 一键启动所有微服务"}, {"id": 7, "title": "检查服务状态 — 确认一切正常"}, {"id": 8, "title": "访问前端页面 — 看到你的在线商店！"}, {"id": 9, "title": "浏览商品 — 第一次操作"}, {"id": 10, "title": "添加购物车 — 体验微服务协作"}, {"id": 11, "title": "下单结账 — 完整的微服务编排"}, {"id": 12, "title": "使用负载生成器 — 模拟真实流量"}, {"id": 13, "title": "清理和后续学习"}];
+
+let currentStep = parseInt(localStorage.getItem('tutorialStep') || '1');
+let completedSteps = JSON.parse(localStorage.getItem('tutorialCompleted') || '[]');
+
+// ── Initialize ─────────────────────────────────────────────
+function init() {
+  renderStepNav();
+  renderMobileNav();
+  showStep(currentStep);
+}
+
+// ── Render Step Nav (Sidebar) ──────────────────────────────
+function renderStepNav() {
+  const nav = document.getElementById('stepNav');
+  nav.innerHTML = '';
+  steps.forEach(step => {
+    const item = document.createElement('div');
+    item.className = 'step-nav-item ' + (
+      completedSteps.includes(step.id) ? 'completed' :
+      step.id === currentStep ? 'active' : 'pending'
+    );
+    item.onclick = () => showStep(step.id);
+    item.innerHTML = `
+      <div class="step-num">${completedSteps.includes(step.id) ? '✓' : step.id}</div>
+      <div class="step-nav-text">${step.title}</div>
+    `;
+    nav.appendChild(item);
+  });
+}
+
+// ── Render Mobile Nav ──────────────────────────────────────
+function renderMobileNav() {
+  const nav = document.getElementById('mobileNav');
+  nav.innerHTML = '';
+  steps.forEach(step => {
+    const item = document.createElement('div');
+    item.className = 'mobile-nav-item ' + (
+      completedSteps.includes(step.id) ? 'completed' :
+      step.id === currentStep ? 'active' : ''
+    );
+    item.onclick = () => showStep(step.id);
+    item.textContent = (completedSteps.includes(step.id) ? '✓ ' : '') + step.id;
+    nav.appendChild(item);
+  });
+}
+
+// ── Show Step ──────────────────────────────────────────────
+function showStep(stepId) {
+  // Hide all
+  document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+  // Show target
+  const target = document.getElementById('step-' + stepId);
+  if (target) {
+    target.classList.add('active');
+  }
+  currentStep = stepId;
+  localStorage.setItem('tutorialStep', stepId);
+  renderStepNav();
+  renderMobileNav();
+  updateProgress();
+  // Scroll to top on mobile
+  if (window.innerWidth <= 768) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+// ── Navigation ─────────────────────────────────────────────
+function nextStep() {
+  if (currentStep < steps.length) {
+    showStep(currentStep + 1);
+  }
+}
+function prevStep() {
+  if (currentStep > 1) {
+    showStep(currentStep - 1);
+  }
+}
+
+// ── Toggle Step Complete ───────────────────────────────────
+function toggleStepComplete(stepId) {
+  const idx = completedSteps.indexOf(stepId);
+  if (idx === -1) {
+    completedSteps.push(stepId);
+  } else {
+    completedSteps.splice(idx, 1);
+  }
+  localStorage.setItem('tutorialCompleted', JSON.stringify(completedSteps));
+  renderStepNav();
+  renderMobileNav();
+  updateProgress();
+}
+
+// ── Update Progress Bar ────────────────────────────────────
+function updateProgress() {
+  const pct = (currentStep / steps.length) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent =
+    `第 ${currentStep} 步 / 共 ${steps.length} 步`;
+}
+
+// ── Reset Progress ─────────────────────────────────────────
+function resetProgress() {
+  if (confirm('确定要重置所有进度吗？')) {
+    localStorage.removeItem('tutorialStep');
+    localStorage.removeItem('tutorialCompleted');
+    currentStep = 1;
+    completedSteps = [];
+    showStep(1);
+  }
+}
+
+// ── Copy Code ──────────────────────────────────────────────
+function copyCode(btn) {
+  const pre = btn.nextElementSibling || btn.parentElement.querySelector('pre');
+  if (!pre) return;
+  const text = pre.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✅ 已复制';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 复制';
+      btn.classList.remove('copied');
+    }, 2000);
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✅ 已复制';
+    setTimeout(() => { btn.textContent = '📋 复制'; }, 2000);
+  });
+}
+
+// ── Start ──────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
